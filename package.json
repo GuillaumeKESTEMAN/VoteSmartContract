@@ -15,5 +15,8 @@
     "url": "https://github.com/GuillaumeKESTEMAN/VoteSmartContract/issues"
   },
   "homepage": "https://github.com/GuillaumeKESTEMAN/VoteSmartContract#readme",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "hardhat": "^2.22.19"
+  }
 }
