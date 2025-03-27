@@ -42,9 +42,11 @@ contract Voting is Ownable {
     WorkflowStatus private workflowStatus;
     uint256 private winningProposalId;
 
-    constructor() Ownable(msg.sender) {}
+    constructor() Ownable(msg.sender) {
+        workflowStatus = WorkflowStatus.RegisteringVoters;
+    }
 
-    function addVoters(address[] calldata _address) public onlyOwner {
+    function registerVoters(address[] calldata _address) public onlyOwner {
         require(
             workflowStatus == WorkflowStatus.RegisteringVoters,
             "Voters registration is not open."
@@ -61,7 +63,7 @@ contract Voting is Ownable {
         }
     }
 
-    function removeVoter(address _voterAddress) public onlyOwner {
+    function unregisterVoter(address _voterAddress) public onlyOwner {
         require(
             workflowStatus == WorkflowStatus.RegisteringVoters,
             "Voters registration is not open."
@@ -71,5 +73,27 @@ contract Voting is Ownable {
         voters[_voterAddress].isRegistered = false;
 
         emit VoterUnregistered(_voterAddress);
+    }
+
+    function getWorkflowStatus() public view returns (WorkflowStatus) {
+        return workflowStatus;
+    }
+
+    function nextWorkflowStatus() public onlyOwner {
+        if (workflowStatus == WorkflowStatus.RegisteringVoters) {
+            workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
+        } else if (
+            workflowStatus == WorkflowStatus.ProposalsRegistrationStarted
+        ) {
+            workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
+        } else if (
+            workflowStatus == WorkflowStatus.ProposalsRegistrationEnded
+        ) {
+            workflowStatus = WorkflowStatus.VotingSessionStarted;
+        } else if (workflowStatus == WorkflowStatus.VotingSessionStarted) {
+            workflowStatus = WorkflowStatus.VotingSessionEnded;
+        } else if (workflowStatus == WorkflowStatus.VotingSessionEnded) {
+            workflowStatus = WorkflowStatus.VotesTallied;
+        }
     }
 }
