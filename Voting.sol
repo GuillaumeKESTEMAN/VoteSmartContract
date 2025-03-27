@@ -112,6 +112,18 @@ contract Voting is Ownable {
             );
         } else if (workflowStatus == WorkflowStatus.VotingSessionEnded) {
             workflowStatus = WorkflowStatus.VotesTallied;
+
+            winningProposalId = 0;
+
+            for (uint256 i = 1; i < proposals.length; i++) {
+                if (
+                    proposals[i].voteCount >
+                    proposals[winningProposalId].voteCount
+                ) {
+                    winningProposalId = i;
+                }
+            }
+
             emit WorkflowStatusChange(
                 WorkflowStatus.VotingSessionEnded,
                 WorkflowStatus.VotesTallied
@@ -165,5 +177,15 @@ contract Voting is Ownable {
         emit Voted(msg.sender, votedProposalId);
 
         return proposals[votedProposalId].description;
+    }
+
+    function getWinner() public view returns (string memory winningProposal) {
+        require(
+            workflowStatus == WorkflowStatus.VotesTallied,
+            "Vote is not completed."
+        );
+        require(voters[msg.sender].isRegistered, "Voter is not registered.");
+
+        return proposals[winningProposalId].description;
     }
 }
