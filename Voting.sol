@@ -72,7 +72,7 @@ contract Voting is Ownable {
         );
         require(voters[_voterAddress].isRegistered, "Voter is not registered.");
 
-        voters[_voterAddress].isRegistered = false;
+        delete voters[_voterAddress];
 
         emit VoterUnregistered(_voterAddress);
     }
@@ -84,18 +84,38 @@ contract Voting is Ownable {
     function nextWorkflowStatus() public onlyOwner {
         if (workflowStatus == WorkflowStatus.RegisteringVoters) {
             workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
+            emit WorkflowStatusChange(
+                WorkflowStatus.RegisteringVoters,
+                WorkflowStatus.ProposalsRegistrationStarted
+            );
         } else if (
             workflowStatus == WorkflowStatus.ProposalsRegistrationStarted
         ) {
             workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
+            emit WorkflowStatusChange(
+                WorkflowStatus.ProposalsRegistrationStarted,
+                WorkflowStatus.ProposalsRegistrationEnded
+            );
         } else if (
             workflowStatus == WorkflowStatus.ProposalsRegistrationEnded
         ) {
             workflowStatus = WorkflowStatus.VotingSessionStarted;
+            emit WorkflowStatusChange(
+                WorkflowStatus.ProposalsRegistrationEnded,
+                WorkflowStatus.VotingSessionStarted
+            );
         } else if (workflowStatus == WorkflowStatus.VotingSessionStarted) {
             workflowStatus = WorkflowStatus.VotingSessionEnded;
+            emit WorkflowStatusChange(
+                WorkflowStatus.VotingSessionStarted,
+                WorkflowStatus.VotingSessionEnded
+            );
         } else if (workflowStatus == WorkflowStatus.VotingSessionEnded) {
             workflowStatus = WorkflowStatus.VotesTallied;
+            emit WorkflowStatusChange(
+                WorkflowStatus.VotingSessionEnded,
+                WorkflowStatus.VotesTallied
+            );
         }
     }
 
@@ -108,6 +128,8 @@ contract Voting is Ownable {
 
         proposalsCount++;
         proposals[proposalsCount - 1] = Proposal(description, 0);
+        
+        emit ProposalRegistered(proposalsCount - 1);
     }
 
     function getProposals() public view returns (string[] memory) {
@@ -118,5 +140,26 @@ contract Voting is Ownable {
         }
 
         return newProposals;
+    }
+
+    function vote(uint256 votedProposalId) public returns (string memory) {
+        require(
+            workflowStatus == WorkflowStatus.VotingSessionStarted,
+            "Proposals registration is not open."
+        );
+        require(voters[msg.sender].isRegistered, "Voter is not registered.");
+        require(!voters[msg.sender].hasVoted, "Voter has already voted.");
+        require(
+            votedProposalId >= 0 && votedProposalId < proposalsCount,
+            "Invalid proposal ID."
+        );
+
+        voters[msg.sender].hasVoted = true;
+        voters[msg.sender].votedProposalId = votedProposalId;
+        proposals[votedProposalId].voteCount++;
+
+        emit Voted(msg.sender, votedProposalId);
+
+        return proposals[votedProposalId].description;
     }
 }
