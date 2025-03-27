@@ -39,11 +39,13 @@ contract Voting is Ownable {
 
     mapping(address => Voter) private voters;
     mapping(uint256 => Proposal) private proposals;
+    uint256 private proposalsCount;
     WorkflowStatus private workflowStatus;
     uint256 private winningProposalId;
 
     constructor() Ownable(msg.sender) {
         workflowStatus = WorkflowStatus.RegisteringVoters;
+        proposalsCount = 0;
     }
 
     function registerVoters(address[] calldata _address) public onlyOwner {
@@ -95,5 +97,26 @@ contract Voting is Ownable {
         } else if (workflowStatus == WorkflowStatus.VotingSessionEnded) {
             workflowStatus = WorkflowStatus.VotesTallied;
         }
+    }
+
+    function registerProposal(string calldata description) public {
+        require(
+            workflowStatus == WorkflowStatus.ProposalsRegistrationStarted,
+            "Proposals registration is not open."
+        );
+        require(voters[msg.sender].isRegistered, "Voter is not registered.");
+
+        proposalsCount++;
+        proposals[proposalsCount - 1] = Proposal(description, 0);
+    }
+
+    function getProposals() public view returns (string[] memory) {
+        string[] memory newProposals = new string[](proposalsCount);
+
+        for (uint256 i = 0; i < proposalsCount; i++) {
+            newProposals[i] = proposals[i].description;
+        }
+
+        return newProposals;
     }
 }
