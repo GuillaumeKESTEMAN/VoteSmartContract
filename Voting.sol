@@ -38,14 +38,12 @@ contract Voting is Ownable {
     event Voted(address voter, uint256 proposalId);
 
     mapping(address => Voter) private voters;
-    mapping(uint256 => Proposal) private proposals;
-    uint256 private proposalsCount;
+    Proposal[] private proposals;
     WorkflowStatus private workflowStatus;
     uint256 private winningProposalId;
 
     constructor() Ownable(msg.sender) {
         workflowStatus = WorkflowStatus.RegisteringVoters;
-        proposalsCount = 0;
     }
 
     function registerVoters(address[] calldata _address) public onlyOwner {
@@ -78,6 +76,8 @@ contract Voting is Ownable {
     }
 
     function getWorkflowStatus() public view returns (WorkflowStatus) {
+        require(voters[msg.sender].isRegistered, "Voter is not registered.");
+
         return workflowStatus;
     }
 
@@ -126,16 +126,17 @@ contract Voting is Ownable {
         );
         require(voters[msg.sender].isRegistered, "Voter is not registered.");
 
-        proposalsCount++;
-        proposals[proposalsCount - 1] = Proposal(description, 0);
-        
-        emit ProposalRegistered(proposalsCount - 1);
+        proposals.push(Proposal(description, 0));
+
+        emit ProposalRegistered(proposals.length - 1);
     }
 
     function getProposals() public view returns (string[] memory) {
-        string[] memory newProposals = new string[](proposalsCount);
+        require(voters[msg.sender].isRegistered, "Voter is not registered.");
 
-        for (uint256 i = 0; i < proposalsCount; i++) {
+        string[] memory newProposals = new string[](proposals.length);
+
+        for (uint256 i = 0; i < newProposals.length; i++) {
             newProposals[i] = proposals[i].description;
         }
 
@@ -148,11 +149,14 @@ contract Voting is Ownable {
             "Proposals registration is not open."
         );
         require(voters[msg.sender].isRegistered, "Voter is not registered.");
-        require(!voters[msg.sender].hasVoted, "Voter has already voted.");
         require(
-            votedProposalId >= 0 && votedProposalId < proposalsCount,
+            votedProposalId >= 0 && votedProposalId < proposals.length,
             "Invalid proposal ID."
         );
+
+        if (voters[msg.sender].hasVoted) {
+            proposals[voters[msg.sender].votedProposalId].voteCount--;
+        }
 
         voters[msg.sender].hasVoted = true;
         voters[msg.sender].votedProposalId = votedProposalId;
