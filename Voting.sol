@@ -46,18 +46,15 @@ contract Voting is Ownable {
         workflowStatus = WorkflowStatus.RegisteringVoters;
     }
 
-    function registerVoters(address[] calldata _address) public onlyOwner {
+    function registerVoters(address[] calldata _addresses) public onlyOwner {
         require(
             workflowStatus == WorkflowStatus.RegisteringVoters,
             "Voters registration is not open."
         );
 
-        for (uint256 i = 0; i < _address.length; i++) {
-            address voterAddress = _address[i];
-
-            voters[voterAddress].isRegistered = true;
-            voters[voterAddress].hasVoted = false;
-            voters[voterAddress].votedProposalId = 0;
+        for (uint256 i = 0; i < _addresses.length; i++) {
+            address voterAddress = _addresses[i];
+            voters[voterAddress] = Voter(true, false, 0);
 
             emit VoterRegistered(voterAddress);
         }
@@ -82,39 +79,11 @@ contract Voting is Ownable {
     }
 
     function nextWorkflowStatus() public onlyOwner {
-        if (workflowStatus == WorkflowStatus.RegisteringVoters) {
-            workflowStatus = WorkflowStatus.ProposalsRegistrationStarted;
-            emit WorkflowStatusChange(
-                WorkflowStatus.RegisteringVoters,
-                WorkflowStatus.ProposalsRegistrationStarted
-            );
-        } else if (
-            workflowStatus == WorkflowStatus.ProposalsRegistrationStarted
-        ) {
-            workflowStatus = WorkflowStatus.ProposalsRegistrationEnded;
-            emit WorkflowStatusChange(
-                WorkflowStatus.ProposalsRegistrationStarted,
-                WorkflowStatus.ProposalsRegistrationEnded
-            );
-        } else if (
-            workflowStatus == WorkflowStatus.ProposalsRegistrationEnded
-        ) {
-            workflowStatus = WorkflowStatus.VotingSessionStarted;
-            emit WorkflowStatusChange(
-                WorkflowStatus.ProposalsRegistrationEnded,
-                WorkflowStatus.VotingSessionStarted
-            );
-        } else if (workflowStatus == WorkflowStatus.VotingSessionStarted) {
-            workflowStatus = WorkflowStatus.VotingSessionEnded;
-            emit WorkflowStatusChange(
-                WorkflowStatus.VotingSessionStarted,
-                WorkflowStatus.VotingSessionEnded
-            );
-        } else if (workflowStatus == WorkflowStatus.VotingSessionEnded) {
-            workflowStatus = WorkflowStatus.VotesTallied;
+        WorkflowStatus previousStatus = workflowStatus;
+        workflowStatus = WorkflowStatus(uint256(workflowStatus) + 1);
 
+        if (workflowStatus == WorkflowStatus.VotesTallied) {
             winningProposalId = 0;
-
             for (uint256 i = 1; i < proposals.length; i++) {
                 if (
                     proposals[i].voteCount >
@@ -123,12 +92,9 @@ contract Voting is Ownable {
                     winningProposalId = i;
                 }
             }
-
-            emit WorkflowStatusChange(
-                WorkflowStatus.VotingSessionEnded,
-                WorkflowStatus.VotesTallied
-            );
         }
+
+        emit WorkflowStatusChange(previousStatus, workflowStatus);
     }
 
     function registerProposal(string calldata description) public {
@@ -161,10 +127,7 @@ contract Voting is Ownable {
             "Proposals registration is not open."
         );
         require(voters[msg.sender].isRegistered, "Voter is not registered.");
-        require(
-            votedProposalId >= 0 && votedProposalId < proposals.length,
-            "Invalid proposal ID."
-        );
+        require(votedProposalId < proposals.length, "Invalid proposal ID.");
 
         if (voters[msg.sender].hasVoted) {
             proposals[voters[msg.sender].votedProposalId].voteCount--;
