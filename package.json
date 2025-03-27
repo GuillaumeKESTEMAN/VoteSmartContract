@@ -1,0 +1,19 @@
+{
+  "name": "vote_smart_contract",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GuillaumeKESTEMAN/VoteSmartContract.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/GuillaumeKESTEMAN/VoteSmartContract/issues"
+  },
+  "homepage": "https://github.com/GuillaumeKESTEMAN/VoteSmartContract#readme",
+  "description": ""
+}
