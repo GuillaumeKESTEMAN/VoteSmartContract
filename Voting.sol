@@ -29,6 +29,7 @@ contract Voting is Ownable {
     }
 
     event VoterRegistered(address voterAddress);
+    event VoterUnregistered(address voterAddress);
     event WorkflowStatusChange(
         WorkflowStatus previousStatus,
         WorkflowStatus newStatus
@@ -36,7 +37,39 @@ contract Voting is Ownable {
     event ProposalRegistered(uint256 proposalId);
     event Voted(address voter, uint256 proposalId);
 
-    mapping(uint256 => Proposal) public proposals;
+    mapping(address => Voter) private voters;
+    mapping(uint256 => Proposal) private proposals;
+    WorkflowStatus private workflowStatus;
+    uint256 private winningProposalId;
 
     constructor() Ownable(msg.sender) {}
+
+    function addVoters(address[] calldata _address) public onlyOwner {
+        require(
+            workflowStatus == WorkflowStatus.RegisteringVoters,
+            "Voters registration is not open."
+        );
+
+        for (uint256 i = 0; i < _address.length; i++) {
+            address voterAddress = _address[i];
+
+            voters[voterAddress].isRegistered = true;
+            voters[voterAddress].hasVoted = false;
+            voters[voterAddress].votedProposalId = 0;
+
+            emit VoterRegistered(voterAddress);
+        }
+    }
+
+    function removeVoter(address _voterAddress) public onlyOwner {
+        require(
+            workflowStatus == WorkflowStatus.RegisteringVoters,
+            "Voters registration is not open."
+        );
+        require(voters[_voterAddress].isRegistered, "Voter is not registered.");
+
+        voters[_voterAddress].isRegistered = false;
+
+        emit VoterUnregistered(_voterAddress);
+    }
 }
